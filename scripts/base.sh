@@ -10,15 +10,10 @@ basePackages=(
     neovim
     nano
     archlinux-keyring
+    reflector
 )
 
 echo -e "${INFO} Installing base packages"
-for pkg in "${basePackages[@]}"; do
-    if ! pacman -Qq "$pkg" &>/dev/null; then
-        echo -e "${INFO} Installing $pkg"
 
-        sudo pacman -S --noconfirm "$pkg" | tee -a "${logs}/01-base-$(date +"%Y%m%d-%H%M%S").log"
-    else
-        echo -e "${SUCCESS} $pkg is already installed" | tee -a "${logs}/01-base-$(date +"%Y%m%d-%H%M%S").log"
-    fi
-done
+#Use installPackages function to install packages
+installPackages basePackages

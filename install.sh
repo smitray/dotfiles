@@ -41,13 +41,15 @@ fi
 #Create a logs folder if it does not exist
 mkdir -p logs
 
-#make all scripts in scripts folder executable
-# chmod +x scripts/*.sh
 
 # import all the global functions
 srcDir=$(dirname "$(realpath "$0")")
 #define logs folder path as logs from srcDir
 logs="$srcDir/logs"
+#if log files exists then remove them, *.log
+if [ -f "${logs}/*.log" ]; then
+    rm -f "${logs}/*.log"
+fi
 
 #check file globalFn.sh is available and executable, if yes then source it, else
 #if available then make it executable and source it or exit
@@ -55,10 +57,18 @@ if [ -f "${srcDir}/scripts/globalFn.sh" ]; then
     chmod +x "${srcDir}/scripts/globalFn.sh"
     source "${srcDir}/scripts/globalFn.sh"
     #add logs to the log file
-    echo -e "${SUCCESS} ${srcDir}/scripts/globalFn.sh found and sourced" | tee -a "${logs}/00-globalFn-$(date +"%Y%m%d-%H%M%S").log"
+    echo -e "${SUCCESS} ${srcDir}/scripts/globalFn.sh found and sourced" | tee -a "${logs}/00-globalFn-base-$(date +"%Y%m%d-%H%M%S").log"
 else
-    echo -e "${ERROR} ${srcDir}/scripts/globalFn.sh not found" | tee -a "${logs}/00-globalFn-$(date +"%Y%m%d-%H%M%S").log"
+    echo -e "${ERROR} ${srcDir}/scripts/globalFn.sh not found" | tee -a "${logs}/00-globalFn-base-$(date +"%Y%m%d-%H%M%S").log"
     exit 1
+fi
+
+#Check if reflector is installed and then update the mirrorlist for India
+if ! pacman -Qq reflector &>/dev/null; then
+    echo -e "${WARNING} reflector is not installed. Installing reflector"
+    runScript "${srcDir}/scripts/pkgSrcUpdate.sh"
+else
+    echo -e "${SUCCESS} reflector is already installed"
 fi
 
 # Check if base-devel is installed, if not source scripts/base.sh. Please check the script is available before sourcing
@@ -68,3 +78,4 @@ if ! pacman -Qq base-devel &>/dev/null; then
 else
     echo -e "${SUCCESS} base-devel is already installed"
 fi
+
