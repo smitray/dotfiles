@@ -1,7 +1,6 @@
 #!/bin/bash
-# add base-devel, git, wget, curl, nvim, nano, archlinux-keyring in a list
-# check if the package is already installed otherwise install all the packages in the list and log the output in logs folder
 
+# Essential base packages list
 basePackages=(
     base-devel
     git
@@ -11,29 +10,78 @@ basePackages=(
     nano
     archlinux-keyring
     reflector
+    sudo
+    openssh
+    rsync
 )
 
-echo -e "${INFO} Installing base packages"
+# Function to check if Chaotic-AUR is already installed
+is_chaotic_aur_installed() {
+    grep -q "\[chaotic-aur\]" /etc/pacman.conf
+}
 
-#Use installPackages function to install packages
-installPackages "${basePackages[@]}"
+# Function to install Chaotic-AUR if it's not installed
+install_chaotic_aur() {
+    echo -e "${BLUE}Chaotic-AUR is not installed. Installing now...${RESET}"
+    logger "chaotic-aur" "${BLUE}Chaotic-AUR is not installed. Installing now..."
 
-
-echo -e "${INFO} Updating mirrorlist for India" | tee -a "${logs}/mirrorlist-$(date +"%Y%m%d-%H%M%S").log"
-sudo reflector --country India --latest 5 --protocol http --protocol https --sort rate --save /etc/pacman.d/mirrorlist
-
-echo -e "${INFO} Chaotic AUR repository"
-if grep -q "chaotic-aur" /etc/pacman.conf; then
-    echo "Chaotic AUR repository already exists" | tee -a "${logs}/01-chaotic-aur-$(date +"%Y%m%d-%H%M%S").log"
-else
-    echo "Chaotic AUR repository not found, installing..." | tee -a "${logs}/01-chaotic-aur-$(date +"%Y%m%d-%H%M%S").log"
+    # Add the Chaotic-AUR keyring and repository
     sudo pacman-key --recv-key 3056513887B78AEB --keyserver keyserver.ubuntu.com
     sudo pacman-key --lsign-key 3056513887B78AEB
-    sudo pacman -U 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst'
-    sudo pacman -U 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'
-    echo "" | sudo tee -a /etc/pacman.conf
-    echo "[chaotic-aur]" | sudo tee -a /etc/pacman.conf
-    echo "Include = /etc/pacman.d/chaotic-mirrorlist" | sudo tee -a /etc/pacman.conf
-    echo -e "${INFO} Updating the system" | tee -a "${logs}/01-chaotic-aur-$(date +"%Y%m%d-%H%M%S").log"
-    sudo pacman -Syu --noconfirm
-fi
+    sudo pacman -U --noconfirm 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst'
+
+    # Add Chaotic-AUR repository to pacman.conf
+    sudo tee -a /etc/pacman.conf >/dev/null <<EOL
+
+[chaotic-aur]
+Include = /etc/pacman.d/chaotic-mirrorlist
+EOL
+
+    # Synchronize package databases
+    echo -e "${BLUE}Synchronizing package databases...${RESET}"
+    logger "chaotic-aur" "${BLUE}Synchronizing package databases..."
+    sudo pacman -Sy
+
+    if [[ $? -eq 0 ]]; then
+        echo -e "${GREEN}Chaotic-AUR repository added successfully.${RESET}"
+        logger "chaotic-aur" "${GREEN}Chaotic-AUR repository added successfully."
+    else
+        echo -e "${RED}Failed to synchronize package databases.${RESET}"
+        logger "chaotic-aur" "${RED}Failed to synchronize package databases."
+        exit 1
+    fi
+}
+
+# Main setup function to configure the base system
+setup_base() {
+    echo -e "${BLUE}Starting base system setup...${RESET}"
+    logger "baseSetup" "${BLUE}Starting base system setup..."
+
+    # Step 1: Install essential base packages
+    echo -e "${BLUE}Installing base packages...${RESET}"
+    installPackages "${basePackages[@]}"
+
+    # Step 2: Update mirrorlist for India
+    echo -e "${BLUE}Updating mirrorlist for India...${RESET}"
+    logger "mirrorlist" "${BLUE}Updating mirrorlist for India..."
+    sudo reflector --country India --latest 5 --protocol http --protocol https --sort rate --save /etc/pacman.d/mirrorlist
+
+    if [[ $? -eq 0 ]]; then
+        echo -e "${GREEN}Mirrorlist updated successfully.${RESET}"
+        logger "mirrorlist" "${GREEN}Mirrorlist updated successfully."
+    else
+        echo -e "${RED}Failed to update mirrorlist.${RESET}"
+        logger "mirrorlist" "${RED}Failed to update mirrorlist."
+    fi
+
+    # Step 3: Add Chaotic-AUR repository
+    echo -e "${BLUE}Checking for Chaotic-AUR repository...${RESET}"
+    logger "chaotic-aur" "${BLUE}Checking for Chaotic-AUR repository..."
+
+    if is_chaotic_aur_installed; then
+        echo -e "${YELLOW}Chaotic-AUR repository is already installed.${RESET}"
+        logger "chaotic-aur" "${YELLOW}Chaotic-AUR repository is already installed."
+    else
+        install_chaotic_aur
+    fi
+}

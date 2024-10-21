@@ -50,12 +50,12 @@ logger() {
 # Function to run a script with colored output
 runScript() {
     script_path="$1"
-    
+
     if [ -f "$script_path" ]; then
         chmod +x "$script_path"
-        
+
         echo -e "${CYAN}Running $script_path${RESET}"
-        
+
         if source "$script_path"; then
             logger "runScript" "${GREEN}Successfully sourced $script_path${RESET}"
             echo -e "${GREEN}Success: $script_path sourced successfully.${RESET}"
@@ -71,29 +71,40 @@ runScript() {
     fi
 }
 
-#Write a function to install packages with following conditions:
-#Input is a list of packages
-#check if the package is already installed
-#If not installed then check whether the package is available in pacman or aur or chaotic-aur
-#If available then install the package and log the output of the installation
-#If not available then log the error message
-
+# Function to install packages from either pacman or AUR
 installPackages() {
     local pkgList=("$@")
+
     for pkg in "${pkgList[@]}"; do
+        # Check if the package is already installed
         if ! pacman -Qq "$pkg" &>/dev/null; then
-            echo -e "${INFO} Installing $pkg" | tee -a "${logs}/03-packageInstall-$(date +"%Y%m%d-%H%M%S").log"
+            echo -e "${BLUE}Installing $pkg...${RESET}"
+            logger "packageInstall" "${BLUE}Installing $pkg..."
+
+            # Check if the package is available in pacman
             if pacman -Ss "$pkg" &>/dev/null; then
-                sudo pacman -S --noconfirm "$pkg" | tee -a "${logs}/03-packageInstall-$(date +"%Y%m%d-%H%M%S").log"
-            elif yay -Ss "$pkg" &>/dev/null; then
-                yay -S --noconfirm "$pkg" | tee -a "${logs}/03-packageInstall-$(date +"%Y%m%d-%H%M%S").log"
-            elif chaotic-aur -Ss "$pkg" &>/dev/null; then
-                chaotic-aur -S --noconfirm "$pkg" | tee -a "${logs}/03-packageInstall-$(date +"%Y%m%d-%H%M%S").log"
+                echo -e "${CYAN}Package $pkg found in pacman repository.${RESET}"
+                logger "packageInstall" "${CYAN}Package $pkg found in pacman repository."
+                sudo pacman -S --noconfirm "$pkg"
+                echo -e "${GREEN}Successfully installed $pkg from pacman.${RESET}"
+                logger "packageInstall" "${GREEN}Successfully installed $pkg from pacman."
+
+            # Check if the package is available in AUR via aurHlpr (e.g., paru or yay)
+            elif "$aurHlpr" -Ss "$pkg" &>/dev/null; then
+                echo -e "${CYAN}Package $pkg found in AUR.${RESET}"
+                logger "packageInstall" "${CYAN}Package $pkg found in AUR."
+                "$aurHlpr" -S --noconfirm "$pkg"
+                echo -e "${GREEN}Successfully installed $pkg from AUR.${RESET}"
+                logger "packageInstall" "${GREEN}Successfully installed $pkg from AUR."
+
+            # If the package is not found in pacman or AUR
             else
-                echo -e "${ERROR} $pkg not found" | tee -a "${logs}/03-packageInstall-$(date +"%Y%m%d-%H%M%S").log"
+                echo -e "${RED}Error: Package $pkg not found in pacman or AUR.${RESET}"
+                logger "packageInstall" "${RED}Error: Package $pkg not found in pacman or AUR."
             fi
         else
-            echo -e "${SUCCESS} $pkg is already installed" | tee -a "${logs}/03-packageInstall-$(date +"%Y%m%d-%H%M%S").log"
+            echo -e "${GREEN}$pkg is already installed.${RESET}"
+            logger "packageInstall" "${GREEN}$pkg is already installed."
         fi
     done
 }

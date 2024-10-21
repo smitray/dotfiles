@@ -3,7 +3,6 @@
 #Actual path of the script
 srcDir=$(dirname "$(realpath "$0")")
 
-
 # Check if globalFn.sh is available and executable, otherwise make it executable and source it
 if [ -f "${srcDir}/scripts/globalFn.sh" ]; then
     if [ ! -x "${srcDir}/scripts/globalFn.sh" ]; then
@@ -51,15 +50,11 @@ else
     echo -e "${GREEN}Success: You are not running as root. Continuing...${RESET}"
 fi
 
+#Add the aurHelper.sh script
+runScript "${srcDir}/scripts/aurHelper.sh"
+Add the base.sh script
+runScript "${srcDir}/scripts/base.sh"
+setup_base
+#Add nvidia.sh script
+runScript "${srcDir}/scripts/hardware/video/nvidia.sh"
 
-
-
-
-
-# Check if base-devel is installed, if not source scripts/base.sh. Please check the script is available before sourcing
-# runScript "${srcDir}/scripts/base.sh"
-# if ! pacman -Qq base-devel &>/dev/null; then
-#     echo -e "${WARNING} base-devel is not installed. Installing base-devel"
-# else
-#     echo -e "${SUCCESS} base-devel is already installed"
-# fi
