@@ -16,10 +16,10 @@ if [ -f "${srcDir}/scripts/globalFn.sh" ]; then
     echo -e "${GREEN}${srcDir}/scripts/globalFn.sh found and sourced successfully.${RESET}"
 
     # Add logs to the log file
-    logger "global" "${GREEN} - ${srcDir}/scripts/globalFn.sh found and sourced successfully${RESET}"
+    logger "global" "[Success]: ${srcDir}/scripts/globalFn.sh found and sourced successfully."
 else
     echo -e "${RED}${srcDir}/scripts/globalFn.sh not found.${RESET}"
-    logger "global" "${RED} - ${srcDir}/scripts/globalFn.sh not found${RESET}"
+    logger "global" "[FAILED]: ${srcDir}/scripts/globalFn.sh not found$."
     exit 1
 fi
 
@@ -52,9 +52,9 @@ fi
 
 #Add the aurHelper.sh script
 runScript "${srcDir}/scripts/aurHelper.sh"
-Add the base.sh script
+#Add the base.sh script
 runScript "${srcDir}/scripts/base.sh"
 setup_base
 #Add nvidia.sh script
-runScript "${srcDir}/scripts/hardware/video/nvidia.sh"
+runScript "${srcDir}/scripts/nvidia.sh"
 

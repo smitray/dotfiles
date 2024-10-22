@@ -39,7 +39,7 @@ logger() {
     if [[ ! -f "$logFile" ]]; then
         echo -e "${YELLOW}Log file does not exist. Creating a new log file: ${CYAN}$logFile${RESET}"
         touch "$logFile"
-        echo -e "${GREEN}Log file created: ${CYAN}$logFile${RESET}"
+        # echo -e "${GREEN}Log file created: ${CYAN}$logFile${RESET}"
     fi
 
     # Append the log content to the file with a timestamp
@@ -57,16 +57,16 @@ runScript() {
         echo -e "${CYAN}Running $script_path${RESET}"
 
         if source "$script_path"; then
-            logger "runScript" "${GREEN}Successfully sourced $script_path${RESET}"
             echo -e "${GREEN}Success: $script_path sourced successfully.${RESET}"
+            logger "runScript" "[SUCCESS]: Successfully sourced $script_path${RESET}"
         else
-            logger "runScript" "${RED}Failed to source $script_path${RESET}"
+            logger "runScript" "[FAILED]: to source $script_path${RESET}"
             echo -e "${RED}Error: Failed to source $script_path${RESET}"
             exit 1
         fi
     else
         echo -e "${RED}Error: $script_path not found${RESET}"
-        logger "runScript" "${RED}$script_path not found${RESET}"
+        logger "runScript" "[FAILED]: $script_path not found${RESET}"
         exit 1
     fi
 }
@@ -79,32 +79,32 @@ installPackages() {
         # Check if the package is already installed
         if ! pacman -Qq "$pkg" &>/dev/null; then
             echo -e "${BLUE}Installing $pkg...${RESET}"
-            logger "packageInstall" "${BLUE}Installing $pkg..."
+            logger "packageInstall" "[INFO]: Installing $pkg..."
 
             # Check if the package is available in pacman
             if pacman -Ss "$pkg" &>/dev/null; then
                 echo -e "${CYAN}Package $pkg found in pacman repository.${RESET}"
-                logger "packageInstall" "${CYAN}Package $pkg found in pacman repository."
+                logger "packageInstall" "[INFO]: Package $pkg found in pacman repository."
                 sudo pacman -S --noconfirm "$pkg"
                 echo -e "${GREEN}Successfully installed $pkg from pacman.${RESET}"
-                logger "packageInstall" "${GREEN}Successfully installed $pkg from pacman."
+                logger "packageInstall" "[SUCCESS]: installed $pkg from pacman."
 
             # Check if the package is available in AUR via aurHlpr (e.g., paru or yay)
             elif "$aurHlpr" -Ss "$pkg" &>/dev/null; then
                 echo -e "${CYAN}Package $pkg found in AUR.${RESET}"
-                logger "packageInstall" "${CYAN}Package $pkg found in AUR."
+                logger "packageInstall" "[INFO]: Package $pkg found in AUR."
                 "$aurHlpr" -S --noconfirm "$pkg"
                 echo -e "${GREEN}Successfully installed $pkg from AUR.${RESET}"
-                logger "packageInstall" "${GREEN}Successfully installed $pkg from AUR."
+                logger "packageInstall" "[SUCCESS]: installed $pkg from AUR."
 
             # If the package is not found in pacman or AUR
             else
                 echo -e "${RED}Error: Package $pkg not found in pacman or AUR.${RESET}"
-                logger "packageInstall" "${RED}Error: Package $pkg not found in pacman or AUR."
+                logger "packageInstall" "[FAILED]: Package $pkg not found in pacman or AUR."
             fi
         else
             echo -e "${GREEN}$pkg is already installed.${RESET}"
-            logger "packageInstall" "${GREEN}$pkg is already installed."
+            logger "packageInstall" "[SUCCESS]: is already installed."
         fi
     done
 }
