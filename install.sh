@@ -2,25 +2,26 @@
 
 #Actual path of the script
 srcDir=$(dirname "$(realpath "$0")")
+export srcDir
 
 # Check if globalFn.sh is available and executable, otherwise make it executable and source it
 if [ -f "${srcDir}/scripts/globalFn.sh" ]; then
-    if [ ! -x "${srcDir}/scripts/globalFn.sh" ]; then
-        # Make the script executable if it isn't already
-        chmod +x "${srcDir}/scripts/globalFn.sh"
-        echo -e "${YELLOW} ${srcDir}/scripts/globalFn.sh was not executable. Made it executable.${RESET}"
-    fi
+  if [ ! -x "${srcDir}/scripts/globalFn.sh" ]; then
+    # Make the script executable if it isn't already
+    chmod +x "${srcDir}/scripts/globalFn.sh"
+    echo -e "${YELLOW} ${srcDir}/scripts/globalFn.sh was not executable. Made it executable.${RESET}"
+  fi
 
-    # Source the script
-    source "${srcDir}/scripts/globalFn.sh"
-    echo -e "${GREEN}${srcDir}/scripts/globalFn.sh found and sourced successfully.${RESET}"
+  # Source the script
+  source "${srcDir}/scripts/globalFn.sh"
+  echo -e "${GREEN}${srcDir}/scripts/globalFn.sh found and sourced successfully.${RESET}"
 
-    # Add logs to the log file
-    logger "global" "[Success]: ${srcDir}/scripts/globalFn.sh found and sourced successfully."
+  # Add logs to the log file
+  logger "global" "[Success]: ${srcDir}/scripts/globalFn.sh found and sourced successfully."
 else
-    echo -e "${RED}${srcDir}/scripts/globalFn.sh not found.${RESET}"
-    logger "global" "[FAILED]: ${srcDir}/scripts/globalFn.sh not found$."
-    exit 1
+  echo -e "${RED}${srcDir}/scripts/globalFn.sh not found.${RESET}"
+  logger "global" "[FAILED]: ${srcDir}/scripts/globalFn.sh not found$."
+  exit 1
 fi
 
 clear
@@ -44,10 +45,10 @@ EOF
 
 # Check and make sure the script is not run as root
 if [ "$EUID" -eq 0 ]; then
-    echo -e "${RED}Error: This script should not be run as root. Please run as a regular user.${RESET}"
-    exit 1
+  echo -e "${RED}Error: This script should not be run as root. Please run as a regular user.${RESET}"
+  exit 1
 else
-    echo -e "${GREEN}Success: You are not running as root. Continuing...${RESET}"
+  echo -e "${GREEN}Success: You are not running as root. Continuing...${RESET}"
 fi
 
 #Add the aurHelper.sh script
@@ -57,4 +58,3 @@ runScript "${srcDir}/scripts/base.sh"
 setup_base
 #Add nvidia.sh script
 runScript "${srcDir}/scripts/nvidia.sh"
-
