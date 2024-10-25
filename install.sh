@@ -55,6 +55,5 @@ fi
 runScript "${srcDir}/scripts/aurHelper.sh"
 #Add the base.sh script
 runScript "${srcDir}/scripts/base.sh"
-setup_base
 #Add nvidia.sh script
 runScript "${srcDir}/scripts/nvidia.sh"

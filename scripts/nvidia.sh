@@ -89,14 +89,13 @@ if [[ -n "$gpu_info" ]]; then
   #    - If successful, prints and logs a success message.
   #    - If failed, prints and logs a failure message.
   echo -e "${BLUE}The following packages will be installed: ${package_list[*]}${RESET}"
-  logger "packageInstall" "[UPDATE]: Packages to be installed: ${package_list[*]}"
-  if installPackages "${package_list[@]}"; then
-    echo -e "${GREEN}All NVIDIA packages have been installed successfully.${RESET}"
-    logger "packageInstall" "[SUCCESS]: All NVIDIA packages installed successfully: ${package_list[*]}"
-  else
-    echo -e "${RED}Failed to install NVIDIA packages.${RESET}"
-    logger "packageInstall" "[FAILED]: Failed to install NVIDIA packages."
-  fi
+  # if installPackages "${package_list[@]}"; then
+  #   echo -e "${GREEN}All NVIDIA packages have been installed successfully.${RESET}"
+  #   logger "packageInstall" "[SUCCESS]: All NVIDIA packages installed successfully: ${package_list[*]}"
+  # else
+  #   echo -e "${RED}Failed to install NVIDIA packages.${RESET}"
+  #   logger "packageInstall" "[FAILED]: Failed to install NVIDIA packages."
+  # fi
 
 else
   echo -e "${YELLOW}No NVIDIA GPU detected on this system.${RESET}"

@@ -13,7 +13,9 @@ srcDir=$(dirname "$(realpath "$0")") || $srcDir
 #Log management
 logs="${srcDir}/logs"
 
-# Check if the logs folder exists
+# Define the AUR helper to use (paru or yay)
+aurHlpr="${aurHlpr:-paru}"
+
 # Check if the logs folder exists
 if [[ -d "$logs" ]]; then
   # Check if there are any log files in the folder
@@ -45,7 +47,6 @@ logger() {
 
   # Append the log content to the file with a timestamp
   echo "$(date '+%Y-%m-%d %H:%M:%S') - $logMsg" >>"$logFile"
-  # echo -e "${GREEN}Logged: ${CYAN}$logMsg${RESET} to ${CYAN}$logFile${RESET}"
 }
 
 # Function to run a script with colored output
@@ -73,41 +74,66 @@ runScript() {
   fi
 }
 
-# Function to install packages from either pacman or AUR
-installPackages() {
-  local pkgList=("$@")
-  local aurHlpr="paru" || $aurHlpr
+# Function to check if a package is already installed
+pkg_installed() {
+  pacman -Qq "$1" &>/dev/null
+}
 
-  for pkg in "${pkgList[@]}"; do
+# Function to check if a package is available in the official pacman repositories
+pkg_available_in_pacman() {
+  pacman -Ss "$1" &>/dev/null
+}
+
+# Function to check if a package is available in AUR using the AUR helper (paru, yay, etc.)
+pkg_available_in_aur() {
+  "$aurHlpr" -Ss "$1" &>/dev/null
+}
+
+# Function to install collected packages from pacman and AUR
+install_packages() {
+  local archPkg=()
+  local aurPkg=()
+
+  # Collect packages
+  for pkg in "$@"; do
     # Check if the package is already installed
-    if ! pacman -Qq "$pkg" &>/dev/null; then
-      echo -e "${BLUE}Installing $pkg...${RESET}"
-      logger "packageInstall" "[INFO]: Installing $pkg..."
-
-      # Check if the package is available in pacman
-      if pacman -Ss "$pkg" &>/dev/null; then
-        echo -e "${CYAN}Package $pkg found in pacman repository.${RESET}"
-        logger "packageInstall" "[INFO]: Package $pkg found in pacman repository."
-        sudo pacman -S --noconfirm "$pkg"
-        echo -e "${GREEN}Successfully installed $pkg from pacman.${RESET}"
-        logger "packageInstall" "[SUCCESS]: installed $pkg from pacman."
-
-      # Check if the package is available in AUR via aurHlpr (e.g., paru or yay)
-      elif "$aurHlpr" -Ss "$pkg" &>/dev/null; then
-        echo -e "${CYAN}Package $pkg found in AUR.${RESET}"
-        logger "packageInstall" "[INFO]: Package $pkg found in AUR."
-        "$aurHlpr" -S --noconfirm "$pkg"
-        echo -e "${GREEN}Successfully installed $pkg from AUR.${RESET}"
-        logger "packageInstall" "[SUCCESS]: installed $pkg from AUR."
-
-      # If the package is not found in pacman or AUR
-      else
-        echo -e "${RED}Error: Package $pkg not found in pacman or AUR.${RESET}"
-        logger "packageInstall" "[FAILED]: Package $pkg not found in pacman or AUR."
-      fi
+    if pkg_installed "$pkg"; then
+      echo -e "${GREEN}[skip] ${pkg} is already installed.${RESET}"
+      logger "packageInstall" "[INFO]: ${pkg} is already installed."
+    # Check if the package is available in pacman
+    elif pkg_available_in_pacman "$pkg"; then
+      echo -e "${CYAN}[pacman] Queueing ${pkg} for installation from official repo...${RESET}"
+      archPkg+=("$pkg")
+    # Check if the package is available in AUR
+    elif pkg_available_in_aur "$pkg"; then
+      echo -e "${CYAN}[AUR] Queueing ${pkg} for installation from AUR...${RESET}"
+      aurPkg+=("$pkg")
+    # If the package is not found in pacman or AUR
     else
-      echo -e "${GREEN}$pkg is already installed.${RESET}"
-      logger "packageInstall" "[SUCCESS]: ${pkg} is already installed."
+      echo -e "${RED}Error: Package ${pkg} not found in pacman or AUR.${RESET}"
+      logger "packageInstall" "[FAILED]: Package ${pkg} not found in pacman or AUR."
     fi
   done
+
+  # Install packages from pacman
+  if [[ ${#archPkg[@]} -gt 0 ]]; then
+    echo -e "${BLUE}Installing packages from official Arch repo...${RESET}"
+    if sudo pacman -S --noconfirm "${archPkg[@]}" 2>"${logs}/packageInstall.log"; then
+      echo -e "${GREEN}Successfully installed ${archPkg[*]} from pacman.${RESET}"
+      logger "packageInstall" "[SUCCESS]: Successfully installed ${archPkg[*]} from pacman."
+    else
+      echo -e "${RED}Error: Failed to install some packages from pacman.${RESET}"
+    fi
+  fi
+
+  # Install packages from AUR
+  if [[ ${#aurPkg[@]} -gt 0 ]]; then
+    echo -e "${BLUE}Installing packages from AUR...${RESET}"
+    if "$aurHlpr" -S --noconfirm "${aurPkg[@]}" 2>"${logs}/packageInstall.log"; then
+      echo -e "${GREEN}Successfully installed ${aurPkg[*]} from AUR.${RESET}"
+      logger "packageInstall" "[SUCCESS]: Successfully installed ${aurPkg[*]} from AUR."
+    else
+      echo -e "${RED}Error: Failed to install some packages from AUR.${RESET}"
+    fi
+  fi
 }
