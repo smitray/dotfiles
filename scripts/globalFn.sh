@@ -10,66 +10,69 @@ CYAN='\033[0;36m'
 RESET='\033[0m' # Reset color
 
 srcDir=$(dirname "$(realpath "$0")") || $srcDir
-#Log management
-logs="${srcDir}/logs"
 
 # Define the AUR helper to use (paru or yay)
 aurHlpr="${aurHlpr:-paru}"
 
-# Check if the logs folder exists
-if [[ -d "$logs" ]]; then
-  # Check if there are any log files in the folder
-  if compgen -G "$logs/*.log" >/dev/null; then
-    echo -e "${BLUE}Cleaning log files in $logs...${RESET}"
-    # Remove all files with .log extension
-    rm -f "$logs"/*.log
-    echo -e "${GREEN}Log files removed successfully.${RESET}"
+#Log management
+logs="${srcDir}/script.log"
+
+# Check if the log file exists
+if [[ -f "$logs" ]]; then
+  echo -e "${YELLOW}Log file found. Removing old log file...${RESET}"
+
+  # Remove the existing log file
+  if rm "$logs"; then
+    echo -e "${GREEN}Old log file removed successfully.${RESET}"
   else
-    echo -e "${CYAN}No log files found in $logs. No cleanup needed.${RESET}"
+    echo -e "${RED}Error: Failed to remove the log file: $logs${RESET}"
+    exit 1
   fi
+fi
+
+# Create a new log file
+echo -e "${YELLOW}Creating a new log file...${RESET}"
+if touch "$logs"; then
+  echo -e "${GREEN}Log file created successfully: $logs${RESET}"
 else
-  # Create the logs folder if it doesn't exist
-  echo -e "${BLUE}$logs does not exist. Creating the logs folder.${RESET}"
-  mkdir -p "$logs"
-  echo -e "${GREEN}$logs folder created successfully.${RESET}"
+  echo -e "${RED}Error: Failed to create the log file: $logs${RESET}"
+  exit 1
 fi
 
 logger() {
-  local logFile="${logs}/${1}.log"
-  local logMsg="${2}"
-
-  # Check if the file exists, if not, create it and log the action
-  if [[ ! -f "$logFile" ]]; then
-    echo -e "${YELLOW}Log file does not exist. Creating a new log file: ${CYAN}$logFile${RESET}"
-    touch "$logFile"
-    # echo -e "${GREEN}Log file created: ${CYAN}$logFile${RESET}"
-  fi
-
-  # Append the log content to the file with a timestamp
-  echo "$(date '+%Y-%m-%d %H:%M:%S') - $logMsg" >>"$logFile"
+  local logMsg="${1}"
+  echo "$(date '+%Y-%m-%d %H:%M:%S') - $logMsg" >>"$logs"
 }
 
 # Function to run a script with colored output
 runScript() {
-  script_path="$1"
+  local script_path="$1"
 
-  if [ -f "$script_path" ]; then
-    chmod +x "$script_path"
+  # Check if the script file exists
+  if [[ -f "$script_path" ]]; then
 
-    echo -e "${CYAN}Running $script_path${RESET}"
+    # Ensure the script is executable
+    if [[ ! -x "$script_path" ]]; then
+      chmod +x "$script_path"
+      echo -e "${YELLOW}${script_path} was not executable. Made it executable.${RESET}"
+    fi
 
+    echo -e "${CYAN}Running $script_path...${RESET}"
+
+    # Try to source the script
     # shellcheck source=/dev/null
     if source "$script_path"; then
       echo -e "${GREEN}Success: $script_path sourced successfully.${RESET}"
-      logger "runScript" "[SUCCESS]: Successfully sourced $script_path${RESET}"
+      logger "[SUCCESS]:[Script Source] Successfully sourced $script_path"
     else
-      logger "runScript" "[FAILED]: to source $script_path${RESET}"
-      echo -e "${RED}Error: Failed to source $script_path${RESET}"
+      echo -e "${RED}Error: Failed to source $script_path.${RESET}"
+      logger "[FAILED]:[Script Source] Failed to source $script_path"
       exit 1
     fi
   else
-    echo -e "${RED}Error: $script_path not found${RESET}"
-    logger "runScript" "[FAILED]: $script_path not found${RESET}"
+    # File not found error handling
+    echo -e "${RED}Error: $script_path not found.${RESET}"
+    logger "[FAILED]:[Script Source] $script_path not found"
     exit 1
   fi
 }
@@ -99,7 +102,7 @@ install_packages() {
     # Check if the package is already installed
     if pkg_installed "$pkg"; then
       echo -e "${GREEN}[skip] ${pkg} is already installed.${RESET}"
-      logger "packageInstall" "[INFO]: ${pkg} is already installed."
+      logger "[INFO]:[Package Install] ${pkg} is already installed."
     # Check if the package is available in pacman
     elif pkg_available_in_pacman "$pkg"; then
       echo -e "${CYAN}[pacman] Queueing ${pkg} for installation from official repo...${RESET}"
@@ -111,16 +114,16 @@ install_packages() {
     # If the package is not found in pacman or AUR
     else
       echo -e "${RED}Error: Package ${pkg} not found in pacman or AUR.${RESET}"
-      logger "packageInstall" "[FAILED]: Package ${pkg} not found in pacman or AUR."
+      logger "[FAILED]:[Package Install] Package ${pkg} not found in pacman or AUR."
     fi
   done
 
   # Install packages from pacman
   if [[ ${#archPkg[@]} -gt 0 ]]; then
     echo -e "${BLUE}Installing packages from official Arch repo...${RESET}"
-    if sudo pacman -S --noconfirm "${archPkg[@]}" 2>"${logs}/packageInstall.log"; then
+    if sudo pacman -S --noconfirm "${archPkg[@]}" 2>"${logs}"; then
       echo -e "${GREEN}Successfully installed ${archPkg[*]} from pacman.${RESET}"
-      logger "packageInstall" "[SUCCESS]: Successfully installed ${archPkg[*]} from pacman."
+      logger "[SUCCESS]:[Package Install] Successfully installed ${archPkg[*]} from pacman."
     else
       echo -e "${RED}Error: Failed to install some packages from pacman.${RESET}"
     fi
@@ -129,9 +132,9 @@ install_packages() {
   # Install packages from AUR
   if [[ ${#aurPkg[@]} -gt 0 ]]; then
     echo -e "${BLUE}Installing packages from AUR...${RESET}"
-    if "$aurHlpr" -S --noconfirm "${aurPkg[@]}" 2>"${logs}/packageInstall.log"; then
+    if "$aurHlpr" -S --noconfirm "${aurPkg[@]}" 2>"${logs}"; then
       echo -e "${GREEN}Successfully installed ${aurPkg[*]} from AUR.${RESET}"
-      logger "packageInstall" "[SUCCESS]: Successfully installed ${aurPkg[*]} from AUR."
+      logger "[SUCCESS]:[Package Install] Successfully installed ${aurPkg[*]} from AUR."
     else
       echo -e "${RED}Error: Failed to install some packages from AUR.${RESET}"
     fi

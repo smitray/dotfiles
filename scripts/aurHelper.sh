@@ -40,29 +40,24 @@ install_aur_helper() {
     echo -e "${CYAN}Installing $aurHlpr...${RESET}"
 
     # Install the selected AUR helper
-    if [ "$aurHlpr" == "paru" ]; then
-      git clone https://aur.archlinux.org/paru.git
-      cd paru || exit
-      makepkg -si --noconfirm
-      cd ..
-      rm -rf paru
-    elif [ "$aurHlpr" == "yay" ]; then
-      git clone https://aur.archlinux.org/yay.git
-      cd yay || exit
-      makepkg -si --noconfirm
-      cd ..
-      rm -rf yay
-    fi
+    git clone "https://aur.archlinux.org/$aurHlpr.git"
+    cd "$aurHlpr" || exit
+    makepkg -si --noconfirm
+    cd ..
+    rm -rf "$aurHlpr"
 
     # Confirm installation
     if command -v "$aurHlpr" &>/dev/null; then
       echo -e "${GREEN}$aurHlpr installed successfully!${RESET}"
+      logger "[INFO]:[AUR] $aurHlpr installed successfully."
     else
       echo -e "${RED}Failed to install $aurHlpr. Please check the installation steps.${RESET}"
+      logger "[FAILED]:[AUR] Failed to install $aurHlpr."
       exit 1
     fi
   else
     echo -e "${GREEN}$aurHlpr is already installed!${RESET}"
+    logger "[INFO]:[AUR] $aurHlpr is already installed."
   fi
 }
 
