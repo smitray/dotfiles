@@ -118,25 +118,25 @@ install_packages() {
     fi
   done
 
-  # Install packages from pacman
-  if [[ ${#archPkg[@]} -gt 0 ]]; then
-    echo -e "${BLUE}Installing packages from official Arch repo...${RESET}"
-    if sudo pacman -S --noconfirm "${archPkg[@]}" 2>"${logs}"; then
-      echo -e "${GREEN}Successfully installed ${archPkg[*]} from pacman.${RESET}"
-      logger "[SUCCESS]:[Package Install] Successfully installed ${archPkg[*]} from pacman."
-    else
-      echo -e "${RED}Error: Failed to install some packages from pacman.${RESET}"
-    fi
-  fi
+  # # Install packages from pacman
+  # if [[ ${#archPkg[@]} -gt 0 ]]; then
+  #   echo -e "${BLUE}Installing packages from official Arch repo...${RESET}"
+  #   if sudo pacman -S --noconfirm "${archPkg[@]}" 2>"${logs}"; then
+  #     echo -e "${GREEN}Successfully installed ${archPkg[*]} from pacman.${RESET}"
+  #     logger "[SUCCESS]:[Package Install] Successfully installed ${archPkg[*]} from pacman."
+  #   else
+  #     echo -e "${RED}Error: Failed to install some packages from pacman.${RESET}"
+  #   fi
+  # fi
 
-  # Install packages from AUR
-  if [[ ${#aurPkg[@]} -gt 0 ]]; then
-    echo -e "${BLUE}Installing packages from AUR...${RESET}"
-    if "$aurHlpr" -S --noconfirm "${aurPkg[@]}" 2>"${logs}"; then
-      echo -e "${GREEN}Successfully installed ${aurPkg[*]} from AUR.${RESET}"
-      logger "[SUCCESS]:[Package Install] Successfully installed ${aurPkg[*]} from AUR."
-    else
-      echo -e "${RED}Error: Failed to install some packages from AUR.${RESET}"
-    fi
-  fi
+  # # Install packages from AUR
+  # if [[ ${#aurPkg[@]} -gt 0 ]]; then
+  #   echo -e "${BLUE}Installing packages from AUR...${RESET}"
+  #   if "$aurHlpr" -S --noconfirm "${aurPkg[@]}" 2>"${logs}"; then
+  #     echo -e "${GREEN}Successfully installed ${aurPkg[*]} from AUR.${RESET}"
+  #     logger "[SUCCESS]:[Package Install] Successfully installed ${aurPkg[*]} from AUR."
+  #   else
+  #     echo -e "${RED}Error: Failed to install some packages from AUR.${RESET}"
+  #   fi
+  # fi
 }
