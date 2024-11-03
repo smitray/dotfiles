@@ -59,8 +59,8 @@ else
 fi
 
 #Add the aurHelper.sh script
-# runScript "${srcDir}/scripts/aurHelper.sh"
+runScript "${srcDir}/scripts/aurHelper.sh"
 # Add the base.sh script
-# runScript "${srcDir}/scripts/base.sh"
-Add nvidia.sh script
+runScript "${srcDir}/scripts/base.sh"
+# Add nvidia.sh script
 runScript "${srcDir}/scripts/nvidia.sh"
