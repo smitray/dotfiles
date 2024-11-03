@@ -13,6 +13,11 @@ basePackages=(
   sudo
   openssh
   rsync
+  nano
+  linux-firmware
+  amd-ucode
+  mesa
+  gvfs
 )
 
 # Prompt the user for a country/region, with a default value of "India"
