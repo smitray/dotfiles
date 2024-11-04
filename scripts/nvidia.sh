@@ -1,5 +1,20 @@
 #!/bin/bash
 
+clear
+
+cat <<"EOF"
+
+  _   _       _     _ _          _____      _               
+ | \ | |     (_)   | (_)        / ____|    | |              
+ |  \| |_   ___  __| |_  __ _  | (___   ___| |_ _   _ _ __  
+ | . ` \ \ / / |/ _` | |/ _` |  \___ \ / _ \ __| | | | '_ \ 
+ | |\  |\ V /| | (_| | | (_| |  ____) |  __/ |_| |_| | |_) |
+ |_| \_| \_/ |_|\__,_|_|\__,_| |_____/ \___|\__|\__,_| .__/ 
+                                                     | |    
+                                                     |_|    
+
+EOF
+
 # List of NVIDIA DKMS drivers for specific hardware generations
 nvidia_dkms_drivers=(
   nvidia-dkms       # Supports modern NVIDIA GPUs, including your RTX 3050

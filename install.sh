@@ -58,9 +58,16 @@ else
   echo -e "${GREEN}Success: You are not running as root. Continuing...${RESET}"
 fi
 
-#Add the aurHelper.sh script
-runScript "${srcDir}/scripts/aurHelper.sh"
+# Add some delay to let the user read the messages
+sleep 1
+
 # Add the base.sh script
 runScript "${srcDir}/scripts/base.sh"
+#Add the aurHelper.sh script
+runScript "${srcDir}/scripts/aurHelper.sh"
 # Add nvidia.sh script
 runScript "${srcDir}/scripts/nvidia.sh"
+# Add audio.sh script
+runScript "${srcDir}/scripts/audio.sh"
+# Add bluetooth.sh script
+# runScript "${srcDir}/scripts/bluetooth.sh"

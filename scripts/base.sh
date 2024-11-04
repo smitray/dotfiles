@@ -18,7 +18,23 @@ basePackages=(
   amd-ucode
   mesa
   gvfs
+  fastfetch
 )
+
+clear
+
+cat <<"EOF"
+
+  ____                    _____      _               
+ |  _ \                  / ____|    | |              
+ | |_) | __ _ ___  ___  | (___   ___| |_ _   _ _ __  
+ |  _ < / _` / __|/ _ \  \___ \ / _ \ __| | | | '_ \ 
+ | |_) | (_| \__ \  __/  ____) |  __/ |_| |_| | |_) |
+ |____/ \__,_|___/\___| |_____/ \___|\__|\__,_| .__/ 
+                                              | |    
+                                              |_|    
+
+EOF
 
 # Prompt the user for a country/region, with a default value of "India"
 read -r -p "Enter your country or region for the mirrorlist (default: India): " country

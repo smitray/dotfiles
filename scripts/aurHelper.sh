@@ -1,21 +1,21 @@
 #!/bin/bash
 
-# This script provides a function to install an AUR helper (either paru or yay).
-# It prompts the user to select their preferred AUR helper and installs it if it is not already installed.
-#
-# Usage:
-#   1. Run the script.
-#   2. Follow the prompt to select your preferred AUR helper (1 for paru, 2 for yay).
-#
-# The script performs the following steps:
-#   1. Prompts the user to select an AUR helper.
-#   2. Checks if the selected AUR helper is already installed.
-#   3. If not installed, clones the respective AUR repository and installs the AUR helper.
-#   4. Confirms the installation and provides feedback to the user.
-#
-# Note:
-#   - The script uses git and makepkg for installation, so ensure these tools are available on your system.
-#   - The script assumes it is run in an environment where sudo privileges are available for package installation.
+clear
+
+cat <<"EOF"
+
+                       _    _      _                 
+     /\               | |  | |    | |                
+    /  \  _   _ _ __  | |__| | ___| |_ __   ___ _ __ 
+   / /\ \| | | | '__| |  __  |/ _ \ | '_ \ / _ \ '__|
+  / ____ \ |_| | |    | |  | |  __/ | |_) |  __/ |   
+ /_/    \_\__,_|_|    |_|  |_|\___|_| .__/ \___|_|   
+                                    | |              
+                                    |_|              
+
+EOF
+
+
 install_aur_helper() {
   echo -e "${BLUE}Select your preferred AUR helper:${RESET}"
   echo -e "${YELLOW}1. paru${RESET}"
@@ -64,3 +64,4 @@ install_aur_helper() {
 # Ensure the AUR helper is available globally for other scripts
 install_aur_helper
 export aurHlpr
+# sleep 1
