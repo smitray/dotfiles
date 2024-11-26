@@ -121,22 +121,42 @@ install_packages() {
   # Install packages from pacman
   if [[ ${#archPkg[@]} -gt 0 ]]; then
     echo -e "${BLUE}Installing packages from official Arch repo...${RESET}"
-    if sudo pacman -S --noconfirm "${archPkg[@]}" 2>"${logs}"; then
+    if sudo pacman -S --noconfirm "${archPkg[@]}"; then
       echo -e "${GREEN}Successfully installed ${archPkg[*]} from pacman.${RESET}"
       logger "[SUCCESS]:[Package Install] Successfully installed ${archPkg[*]} from pacman."
     else
       echo -e "${RED}Error: Failed to install some packages from pacman.${RESET}"
+      logger "[FAILED]:[Package Install] Successfully installed from pacman."
     fi
   fi
 
   # Install packages from AUR
   if [[ ${#aurPkg[@]} -gt 0 ]]; then
     echo -e "${BLUE}Installing packages from AUR...${RESET}"
-    if "$aurHlpr" -S --noconfirm "${aurPkg[@]}" 2>"${logs}"; then
+    if "$aurHlpr" -S --noconfirm "${aurPkg[@]}"; then
       echo -e "${GREEN}Successfully installed ${aurPkg[*]} from AUR.${RESET}"
       logger "[SUCCESS]:[Package Install] Successfully installed ${aurPkg[*]} from AUR."
     else
       echo -e "${RED}Error: Failed to install some packages from AUR.${RESET}"
+      logger "[FAILED]:[Package Install] Failed to install some packages from AUR."
     fi
   fi
+}
+
+# Function to ask a yes/no question
+ask() {
+  while true; do
+    read -rp "$1 [y/n]: " response
+    case "$response" in
+    [yY][eE][sS] | [yY])
+      return 0
+      ;; # User answered "yes"
+    [nN][oO] | [nN])
+      return 1
+      ;; # User answered "no"
+    *)
+      echo "Please answer 'y' or 'n'."
+      ;;
+    esac
+  done
 }

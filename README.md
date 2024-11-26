@@ -3,7 +3,7 @@
 ### Todo List
 
 - [ ] z-shell, starship and configuration
-- [ ] install fonts with all nerds and languages
+- [x] install fonts with all nerds and languages
 - [ ] themeing everforest
 - [ ] kitty configuration
 - [ ] tmux configuration

@@ -66,11 +66,14 @@ runScript "${srcDir}/scripts/base.sh"
 # Add the aurHelper.sh script
 runScript "${srcDir}/scripts/aurHelper.sh"
 # Add nvidia.sh script
-runScript "${srcDir}/scripts/nvidia.sh"
-# Add audio.sh script
-runScript "${srcDir}/scripts/audio.sh"
-# Add bluetooth.sh script
-runScript "${srcDir}/scripts/bluetooth.sh"
+# runScript "${srcDir}/scripts/nvidia.sh"
+# # Add audio.sh script
+# runScript "${srcDir}/scripts/audio.sh"
+# # Add bluetooth.sh script
+# runScript "${srcDir}/scripts/bluetooth.sh"
+# # Add fonts.sh script
+runScript "${srcDir}/scripts/fonts.sh"
+
 
 # Ask the user if they want to install Kanata, if yes then source the script
 if ask "Do you want to install Kanata for keyboard remapping?"; then
