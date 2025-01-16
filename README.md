@@ -2,11 +2,11 @@
 
 ### Todo List
 
-- [ ] z-shell, starship and configuration
+- [x] z-shell, starship and configuration
 - [x] install fonts with all nerds and languages
-- [ ] themeing everforest
-- [ ] kitty configuration
-- [ ] tmux configuration
+- [ ] themeing catppuccin mocha
+- [x] kitty configuration
+- [x] tmux configuration
 - [ ] waybar, rofi and dunst / swaync configuration
 - [ ] hyprland, hypridle, hyprlock and hyprpaper configurtion
 - [ ] neovim setup and configuration

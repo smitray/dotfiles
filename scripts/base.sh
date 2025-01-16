@@ -19,6 +19,7 @@ basePackages=(
   mesa
   gvfs
   fastfetch
+  xorg-xhost
 )
 
 clear
