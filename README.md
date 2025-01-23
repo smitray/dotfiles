@@ -6,7 +6,7 @@
 - [x] install fonts with all nerds and languages
 - [x] themeing catppuccin mocha
 - [x] kitty configuration
-- [x] tmux configuration (status bar issue)
+- [ ] tmux configuration (status bar issue)
 - [ ] waybar, rofi and dunst / swaync configuration
 - [ ] hyprland, hypridle, hyprlock and hyprpaper configurtion
 - [ ] neovim setup and configuration
