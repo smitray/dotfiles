@@ -15,20 +15,6 @@ zinit wait lucid for \
     atinit"zicompinit; zicdreplay" \
         zdharma-continuum/fast-syntax-highlighting
 
-
-# Load zoxide with correct path handling
-zinit ice wait"2" as"command" from"gh-r" lucid \
-  pick"zoxide*/zoxide" \
-  atclone"./zoxide init zsh > init.zsh" \
-  atload'eval "$(zoxide init zsh)"' \
-  atpull"%atclone" \
-  sbin"zoxide*/zoxide" \
-  complement
-zinit light ajeetdsouza/zoxide
-
-zinit ice lucid from"gh-r" as"program" mv"fzf -> ${ZPFX}/bin/fzf"
-zinit light junegunn/fzf
-
 zinit ice lucid as"program"
 zinit snippet 'https://github.com/junegunn/fzf/blob/master/bin/fzf-tmux'
 
@@ -37,3 +23,8 @@ zinit snippet 'https://github.com/junegunn/fzf/blob/master/bin/fzf-tmux'
 zinit ice wait lucid
 zinit light Aloxaf/fzf-tab
 
+# Manual Initialization for Standalone Packages
+eval "$(zoxide init zsh)"       # Zoxide
+eval "$(fzf --zsh)"             # Fzf Keybindings & Completion
+export STARSHIP_CONFIG=$XDG_CONFIG_HOME/starship/starship.toml
+eval "$(starship init zsh)"     # Starship Prompt
