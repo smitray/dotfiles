@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+# Simple cleaner script for lf previews
+# This is a minimal version that does nothing
+# We need this file to exist because lf expects it based on your config
+
+# Just exit successfully
+exit 0

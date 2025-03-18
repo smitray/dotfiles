@@ -26,5 +26,6 @@ zinit light Aloxaf/fzf-tab
 # Manual Initialization for Standalone Packages
 eval "$(zoxide init zsh)"       # Zoxide
 eval "$(fzf --zsh)"             # Fzf Keybindings & Completion
-export STARSHIP_CONFIG=$XDG_CONFIG_HOME/starship/starship.toml
 eval "$(starship init zsh)"     # Starship Prompt
+eval "$(mise activate zsh)"
+

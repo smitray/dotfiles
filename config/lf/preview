@@ -1,0 +1,240 @@
+#!/usr/bin/env bash
+
+# Final enhanced preview script for lf on Arch Linux
+# Optimized for code files with bat, with improved syntax highlighting
+# Also shows archive contents
+
+# Command line arguments
+FILE_PATH="${1}"
+
+# Get file info
+FILE_EXT="${FILE_PATH##*.}"
+FILE_EXT="${FILE_EXT,,}" # Convert to lowercase
+MIME_TYPE="$(file --dereference --brief --mime-type -- "${FILE_PATH}")"
+BASENAME=$(basename "$FILE_PATH")
+
+# Extended list of code file extensions - very comprehensive
+CODE_EXTENSIONS="py pyc pyd pyo pyw python pyx java class jar js jsx ts tsx html htm xhtml css scss sass less php php3 php4 php5 phtml phps c cc cpp cxx c++ h hh hpp hxx rs go rb erb gemspec lua sql json xml yaml yml toml ini conf cfg md markdown txt log sh bash zsh fish csh tcsh ksh swift kt scala clj cljs groovy pl perl awk sed r R dart ex exs erl hrl elm hs lhs f90 f95 f03 f08 fortran nim jl d v vhdl ada adb ps1 psd1 psm1 bat cmd asm s cs cshtml csproj vb vbproj sln m mm cmake xsl xslt jsp asp aspx tpl smarty blade erb tf tfvars proto vue svelte elm mustache handlebars hbs pug jade haml django liquid njk twig razor pm6 raku rakudoc pod p6"
+
+# Extended list of text-related MIME types
+TEXT_MIME_TYPES="text/ application/json application/xml application/javascript application/x-javascript application/ecmascript application/typescript application/x-httpd-php application/x-sh application/x-bash application/x-ruby application/x-perl application/x-python application/x-yaml application/x-toml application/xhtml+xml application/mathml+xml application/rss+xml application/x-shellscript application/x-ndjson application/ld+json application/graphql application/x-latex application/x-tex application/x-texinfo application/x-troff application/x-c application/x-c++ application/x-java application/x-csh application/xslt+xml application/x-makefile application/x-msdos-program application/x-awk application/x-cgi application/xquery application/x-haskell application/x-literate-haskell application/x-tcl application/x-kotlin application/x-scala application/x-sas application/x-stata application/x-lisp application/x-scheme application/x-clojure application/x-rust application/dart application/x-erlang application/x-elixir application/x-nim application/x-lua application/x-asp application/x-aspx application/x-jsp"
+
+# Preview text/code files with bat with enhanced syntax detection
+preview_text() {
+    local file="$1"
+    
+    # Special case handling for certain file extensions
+    case "$FILE_EXT" in
+        # Infrastructure as code
+        tf|tfvars)
+            bat --language=hcl --color=always --style=plain --line-range=:500 "$file"
+            ;;
+        
+        # Protocol buffers
+        proto)
+            bat --language=protobuf --color=always --style=plain --line-range=:500 "$file"
+            ;;
+            
+        # Dockerfiles
+        dockerfile)
+            bat --language=dockerfile --color=always --style=plain --line-range=:500 "$file"
+            ;;
+            
+        # Config files that might not be detected properly
+        conf|cfg|config)
+            bat --language=ini --color=always --style=plain --line-range=:500 "$file"
+            ;;
+            
+        # Template files
+        tmpl|tpl)
+            bat --language=html --color=always --style=plain --line-range=:500 "$file"
+            ;;
+            
+        # GraphQL
+        graphql|gql)
+            bat --language=graphql --color=always --style=plain --line-range=:500 "$file"
+            ;;
+            
+        # Shell scripts without extension
+        *)
+            if [[ -x "$file" ]] && file "$file" | grep -q "shell script"; then
+                bat --language=sh --color=always --style=plain --line-range=:500 "$file"
+            else
+                # Default behavior
+                bat --color=always --style=plain --line-range=:500 "$file"
+            fi
+            ;;
+    esac
+}
+
+# Preview archive contents
+preview_archive() {
+    local file="$1"
+    
+    # Display archive header
+    echo -e "\033[1;33mArchive:\033[0m $(basename "$file")"
+    echo -e "\033[1;30m----------------------------------------\033[0m"
+    
+    # Handle different archive types
+    case "$FILE_EXT" in
+        zip)
+            unzip -l "$file" | head -20
+            ;;
+        tar)
+            tar -tvf "$file" | head -20
+            ;;
+        gz|tgz)
+            if [[ "$file" == *.tar.gz || "$BASENAME" == *.tgz ]]; then
+                tar -tzvf "$file" | head -20
+            else
+                gzip -l "$file"
+            fi
+            ;;
+        bz2|tbz|tbz2)
+            if [[ "$file" == *.tar.bz2 || "$BASENAME" == *.tbz || "$BASENAME" == *.tbz2 ]]; then
+                tar -tjvf "$file" | head -20
+            else
+                echo "BZip2 compressed file"
+            fi
+            ;;
+        xz|txz)
+            if [[ "$file" == *.tar.xz || "$BASENAME" == *.txz ]]; then
+                tar -tJvf "$file" | head -20
+            else
+                echo "XZ compressed file"
+            fi
+            ;;
+        zst|tzst)
+            if [[ "$file" == *.tar.zst || "$BASENAME" == *.tzst ]]; then
+                tar --zstd -tvf "$file" | head -20
+            else
+                echo "Zstandard compressed file"
+            fi
+            ;;
+        rar)
+            unrar l "$file" | head -20
+            ;;
+        7z)
+            7z l "$file" | head -20
+            ;;
+        deb)
+            dpkg -c "$file" | head -20
+            ;;
+        *)
+            # Try to use file command to identify archive type
+            if file "$file" | grep -q "archive"; then
+                echo "Archive file - specific type not supported for preview"
+                file --brief "$file"
+            else
+                echo "Not recognized as a standard archive format"
+            fi
+            ;;
+    esac
+}
+
+# Check if the file extension matches any in our list
+is_code_file() {
+    for ext in $CODE_EXTENSIONS; do
+        if [ "$FILE_EXT" = "$ext" ]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+# Check if the MIME type matches any text-related MIME types
+is_text_mime() {
+    for mime in $TEXT_MIME_TYPES; do
+        if [[ "$MIME_TYPE" == $mime* ]]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+# Also check if file might be text based on its contents
+is_likely_text() {
+    # Check if file command says it's ASCII or UTF-8 text
+    if file --mime-encoding "$FILE_PATH" | grep -q "ascii\|utf-8"; then
+        # Do an additional check for binary content
+        if ! grep -q -P "[\x00-\x08\x0E-\x1F\x7F]" "$FILE_PATH"; then
+            return 0
+        fi
+    fi
+    return 1
+}
+
+# Check if file is an archive
+is_archive() {
+    case "$FILE_EXT" in
+        zip|tar|gz|tgz|bz2|tbz|tbz2|xz|txz|zst|tzst|rar|7z|deb)
+            return 0
+            ;;
+        *)
+            # Check MIME type for archive formats
+            if [[ "$MIME_TYPE" == application/zip ]] || 
+               [[ "$MIME_TYPE" == application/x-tar ]] || 
+               [[ "$MIME_TYPE" == application/x-gzip ]] || 
+               [[ "$MIME_TYPE" == application/x-bzip2 ]] || 
+               [[ "$MIME_TYPE" == application/x-xz ]] || 
+               [[ "$MIME_TYPE" == application/x-zstd ]] || 
+               [[ "$MIME_TYPE" == application/x-rar ]] || 
+               [[ "$MIME_TYPE" == application/x-7z-compressed ]] || 
+               [[ "$MIME_TYPE" == application/vnd.debian.binary-package ]]; then
+                return 0
+            fi
+            
+            # Additional check for tar archives with multiple extensions
+            if [[ "$BASENAME" == *.tar.* ]]; then
+                return 0
+            fi
+            
+            return 1
+            ;;
+    esac
+}
+
+# Special handling for files without extensions (like Makefile, Dockerfile)
+check_special_files() {
+    local basename=$(basename "$FILE_PATH")
+    
+    case "$basename" in
+        Makefile|makefile|GNUmakefile)
+            preview_text "$FILE_PATH"
+            return 0
+            ;;
+        Dockerfile|dockerfile)
+            bat --language=dockerfile --color=always --style=plain "$FILE_PATH"
+            return 0
+            ;;
+        README|readme|LICENSE|license|CONTRIBUTING|contributing|AUTHORS|authors)
+            preview_text "$FILE_PATH"
+            return 0
+            ;;
+        .gitignore|.dockerignore|.editorconfig)
+            preview_text "$FILE_PATH"
+            return 0
+            ;;
+    esac
+    
+    return 1
+}
+
+# Main logic
+if check_special_files; then
+    # File already previewed by special handler
+    :
+elif is_archive; then
+    # This is an archive, show its contents
+    preview_archive "$FILE_PATH"
+elif is_code_file || is_text_mime || is_likely_text; then
+    # This is a text or code file, preview it
+    preview_text "$FILE_PATH"
+else
+    # This is not a text file, do not preview
+    echo "No preview available for this file type."
+    echo "File: $(basename "$FILE_PATH")"
+    echo "Type: $MIME_TYPE"
+fi
+
+exit 0

@@ -1,0 +1,119 @@
+
+# vim:ft=dircolors
+# (This is not a dircolors file but it helps to highlight colors and comments)
+
+# Default values from dircolors
+# File types
+ln      38;5;183  # LINK (Mauve)
+or      38;5;168  # ORPHAN (Red)
+tw      38;5;245  # STICKY_OTHER_WRITABLE (Overlay - Grey)
+ow      38;5;245  # OTHER_WRITABLE (Overlay - Grey)
+st      38;5;245  # STICKY (Overlay - Grey)
+di      38;5;183  # DIR (Mauve)
+pi      38;5;179  # FIFO (Peach)
+so      38;5;168  # SOCK (Red)
+bd      38;5;179  # BLK (Peach)
+cd      38;5;179  # CHR (Peach)
+su      38;5;179  # SETUID (Peach)
+sg      38;5;179  # SETGID (Peach)
+ex      38;5;179  # EXEC (Peach)
+fi      38;5;247  # FILE (Subtext - Light Grey)
+
+# Archives & Compressed Files
+*.tar   38;5;168  # Red
+*.tgz   38;5;168
+*.zip   38;5;168
+*.rar   38;5;168
+*.7z    38;5;168
+*.gz    38;5;168
+*.bz2   38;5;168
+*.xz    38;5;168
+
+# Image Formats
+*.webp  38;5;216  # Peach
+*.jpg   38;5;216  # Peach
+*.jpeg  38;5;216
+*.png   38;5;216
+*.gif   38;5;216
+*.bmp   38;5;216
+*.svg   38;5;216
+*.tiff  38;5;216
+
+# Video Formats
+*.mp4   38;5;210  # Flamingo
+*.mkv   38;5;210
+*.webm  38;5;210
+*.mov   38;5;210
+*.avi   38;5;210
+*.flv   38;5;210
+
+# Audio Formats
+*.mp3   38;5;210   # Flamingo
+*.flac  38;5;210
+*.aac   38;5;210
+*.ogg   38;5;210
+*.wav   38;5;210
+*.m4a   38;5;210
+
+# Document Formats
+*.pdf   38;5;180  # Teal
+*.doc   38;5;180
+*.docx  38;5;180
+*.txt   38;5;180
+*.md    38;5;180
+*.mdx   38;5;180  # Markdown JSX
+
+# Code Files
+*.biome.json 38;5;224  # Maroon (Biome)
+*.prettierrc 38;5;224  # Maroon (Prettier)
+*.html  38;5;208  # Orange
+*.css   38;5;75   # Blue
+*.scss  38;5;75   # Blue
+*.postcss 38;5;75   # Blue
+*.py    38;5;140  # Lavender
+*.rs    38;5;179  # Peach
+*.go    38;5;117  # Sky
+*.js    38;5;220  # Yellow
+*.ts    38;5;75   # Blue
+*.jsx   38;5;220  # Yellow
+*.tsx   38;5;75   # Blue
+*.json  38;5;175  # Pink
+*.yml   38;5;175  # Pink
+*.yaml  38;5;175  # Pink
+*.toml  38;5;175  # Pink
+*.sh    38;5;150  # Green
+*.zsh   38;5;150  # Green
+*.bash  38;5;150  # Green
+*.vue   38;5;150  # Green
+*.svelte 38;5;168  # Red
+*.php   38;5;81   # Light Blue
+*.swift 38;5;202  # Bright Orange
+*.prisma 38;5;121 # Light Green
+*.griddle 38;5;105 # Soft Purple
+*.env   38;5;144  # Dotenv files
+*.lua   38;5;141  # Purple (Lua)
+
+# Database Files
+*.sql   38;5;141  # Purple
+*.sqlite 38;5;141
+*.db    38;5;141
+*.mysql 38;5;141
+*.pgsql 38;5;141
+
+# Linux App & Config Files
+*.conf  38;5;108  # Greenish Cyan
+*.ini   38;5;109  # Cyan
+*.cfg   38;5;110  # Cyan
+*.rc    38;5;110  # Cyan
+*.kbd   38;5;179  # Peach
+*.desktop 38;5;220  # Yellow
+*.service 38;5;208  # Orange
+*.socket 38;5;208  # Orange
+*.profile 38;5;108  # Greenish Cyan
+*.xprofile 38;5;108  # Greenish Cyan
+*.xinitrc 38;5;108  # Greenish Cyan
+*.gtkrc 38;5;141  # Purple (GTK config)
+*.qt    38;5;141  # Purple (Qt config)
+*.mime  38;5;175  # Pink (MIME types)
+*.dircolors 38;5;175  # Pink (Dircolors file)
+*       38;5;247  # Default - Light Grey

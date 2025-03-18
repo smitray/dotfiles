@@ -1,0 +1,956 @@
+# =============================================================================
+# lf File Manager Configuration
+# =============================================================================
+
+# ==============================
+# CORE SETTINGS
+# ==============================
+set icons true              # Show file icons
+set drawbox true            # Draw boxes around file listings
+set hidden true             # Show hidden files by default
+set relativenumber true     # Show relative line numbers
+set incsearch true          # Incremental search
+set previewer ~/.config/lf/preview  # File preview script
+set cleaner ~/.config/lf/cleaner    # Preview cleanup script
+set info size:time          # Show size and time in info panel
+set timefmt "Jan 02 2006 15:04:05"  # Time display format
+set period 1                # Refresh period in seconds
+set scrolloff 10            # Scroll offset from top/bottom
+set shellopts '-eu'         # Shell options
+set ifs "\n"                # Input field separator
+
+# ==============================
+# COMMAND DEFINITIONS
+# ==============================
+
+# ----------------------------
+# Search and Navigation
+# ----------------------------
+
+# Fuzzy find in current directory
+cmd fzf-find ${{
+    res="$(find . -maxdepth 1 | sort | fzf --reverse --header='Jump to location' --preview 'eza -la --color=always {}' || true)"
+    if [ -n "$res" ]; then
+        if [ -d "$res" ]; then
+            lf -remote "send $id cd \"$res\""
+        else
+            lf -remote "send $id select \"$res\""
+        fi
+    fi
+}}
+
+# Search in file contents
+cmd fzf_search ${{
+    # Use ripgrep with smart-case and context for better matches
+    cmd="rg --column --line-number --no-heading --color=always --smart-case --context=2"
+    
+    # FZF with optimized options
+    fzf --ansi \
+        --disabled \
+        --layout=reverse \
+        --height=80% \
+        --info=inline \
+        --border=rounded \
+        --header="Search in files (ESC to cancel, ENTER to select)" \
+        --delimiter=: \
+        --pointer="▶" \
+        --marker="✓" \
+        --bind="start:reload([ -n {q} ] && $cmd -- {q} || true)" \
+        --bind="change:reload([ -n {q} ] && $cmd -- {q} || true)" \
+        --bind="ctrl-space:toggle-preview" \
+        --bind="ctrl-j:preview-down,ctrl-k:preview-up" \
+        --bind='enter:become(lf -remote "send $id select \"$(printf "%s" {1} | sed '\''s/\\/\\\\/g;s/"/\\"/g'\'')\"")' \
+        --preview-window="right:60%:wrap:+{2}-/2" \
+        --preview='bat --style=numbers,changes --color=always --highlight-line={2} --line-range=$((({2}>4)?{2}-4:1)):$((({2}+4))) -- {1}' || true
+}}
+
+# Jump to file with fuzzy search
+cmd fzf_jump ${{
+    res=$(fd --type f --hidden --follow --exclude .git | fzf --reverse --header='Jump to file' \
+    --preview 'bat --style=numbers --color=always --line-range=:500 {}' || true)
+    [[ -n "$res" ]] && lf -remote "send $id select \"$res\""
+}}
+
+# Jump to directory with fuzzy search
+cmd fzf_dir ${{
+    res=$(fd --type d --hidden --follow --exclude .git | fzf --reverse --header='Jump to directory' \
+    --preview 'eza -la --color=always {} | head -100' || true)
+    [[ -n "$res" ]] && lf -remote "send $id cd \"$res\""
+}}
+
+# Zoxide integration for frecency-based navigation
+cmd z ${{
+    result="$(zoxide query --interactive "$@" || true)"
+    [[ -n "$result" ]] && lf -remote "send $id cd \"$result\""
+}}
+
+# ----------------------------
+# File Preview and Prompts
+# ----------------------------
+
+# Enhanced file info on selection
+cmd on-select &{{
+    lf -remote "send $id set statfmt \"$(eza -ld --color=always "$f" | sed 's/\\/\\\\/g;s/"/\\"/g')\""
+}}
+
+# Auto-toggle preview pane based on file type
+cmd on-select &{{
+    # List of previewable extensions
+    previewable_exts="py|js|jsx|ts|tsx|html|htm|css|scss|less|md|txt|sh|bash|zsh|c|cpp|h|go|rs|java|rb|php|lua|json|xml|yaml|yml|toml|ini|conf|cfg|csv|log|Makefile|dockerfile|tar|zip|gz|bz2|xz|rar|7z"
+    
+    # List of previewable mime types
+    previewable_mimes="text/|application/json|application/javascript|application/xml|application/x-httpd-php|application/x-sh|application/x-tar|application/zip|application/x-gzip|application/x-bzip2|application/x-xz|application/x-rar|application/x-7z-compressed"
+    
+    # Check if current file matches previewable extensions or mime types
+    if [[ "$(basename "$f")" =~ \.(${previewable_exts})$ ]] || file --mime-type "$f" | grep -qE "(${previewable_mimes})"; then
+        # File is previewable, enable preview
+        lf -remote "send $id set preview true"
+    else
+        # File is not previewable, disable preview
+        lf -remote "send $id set preview false"
+    fi
+    
+    # Continue with regular on-select behavior if you have any
+    lf -remote "send $id set statfmt \"$(eza -ld --color=always "$f" | sed 's/\\/\\\\/g;s/"/\\"/g')\""
+}}
+
+# Use starship prompt in lf
+cmd on-cd &{{
+    fmt="$(STARSHIP_SHELL= starship prompt | sed 's/\\/\\\\/g;s/"/\\"/g')"
+    lf -remote "send $id set promptfmt \"$fmt\""
+}}
+
+# ----------------------------
+# File Creation Commands
+# ----------------------------
+
+# Create directory
+cmd mkdir %mkdir -p "$@"
+
+# Create file
+cmd touch %touch "$@"
+
+# Create and enter directory
+cmd mkcd ${{
+    mkdir -p "$@"
+    cd "$@"
+    lf -remote "send $id cd \"$@\""
+}}
+
+# Create multiple files interactively
+cmd touchmulti ${{
+    clear
+    echo "Enter filenames to create (one per line, empty to finish):"
+    files=()
+    while read -p "> " filename && [[ -n "$filename" ]]; do
+        files+=("$filename")
+        echo "Added: $filename"
+    done
+    
+    if [ ${#files[@]} -gt 0 ]; then
+        for file in "${files[@]}"; do
+            touch "$file" && echo "Created: $file"
+        done
+    fi
+    
+    read -p "Press enter to continue"
+}}
+
+# ----------------------------
+# File Renaming
+# ----------------------------
+
+# Bulk rename files
+cmd bulk-rename ${{
+    index=$(mktemp /tmp/lf-bulk-rename-index.XXXXXXXXXX)
+    index_edit=$(mktemp /tmp/lf-bulk-rename.XXXXXXXXXX)
+    
+    # Get the files to rename
+    if [ -n "${fs}" ]; then
+        echo "$fs" > $index
+    else
+        # If no selection, use current file only
+        echo "$f" > $index
+    fi
+    
+    # Create editable copy
+    bat --plain $index > $index_edit || cat $index > $index_edit
+    
+    # Open in editor
+    $EDITOR $index_edit
+    
+    # Validate line count
+    if [ $(cat $index | wc -l) -ne $(cat $index_edit | wc -l) ]; then
+        echo "Error: Number of files must stay the same"
+        read -p "Press enter to continue"
+        rm $index $index_edit
+        exit 1
+    fi
+    
+    # Preview changes
+    max=$(($(cat $index | wc -l)))
+    counter=1
+    changes=0
+    while [ $counter -le $max ]; do
+        a="$(bat --plain $index | sed "${counter}q;d")"
+        b="$(bat --plain $index_edit | sed "${counter}q;d")"
+        if [ "$a" != "$b" ]; then
+            echo "Move: $a -> $b"
+            changes=$((changes+1))
+        fi
+        counter=$(($counter+1))
+    done
+    
+    # If no changes, exit
+    if [ $changes -eq 0 ]; then
+        echo "No changes to apply"
+        read -p "Press enter to continue"
+        rm $index $index_edit
+        exit 0
+    fi
+    
+    # Confirm changes
+    read -p "Apply these changes? (y/N) " confirm
+    if [ "$confirm" = "y" ]; then
+        counter=1
+        while [ $counter -le $max ]; do
+            a="$(bat --plain $index | sed "${counter}q;d")"
+            b="$(bat --plain $index_edit | sed "${counter}q;d")"
+            counter=$(($counter+1))
+            
+            # Skip if no change
+            [ "$a" = "$b" ] && continue
+            
+            # Check if target file already exists
+            if [ -e "$b" ] && [ "$a" != "$b" ]; then
+                echo "Error: File exists: $b"
+                continue
+            fi
+            
+            # Rename the file
+            mv "$a" "$b"
+        done
+        echo "Bulk rename completed"
+        read -p "Press enter to continue"
+    else
+        echo "Operation canceled"
+        read -p "Press enter to continue"
+    fi
+    
+    # Clean up
+    rm $index $index_edit
+    lf -remote "send $id load"
+}}
+
+# ----------------------------
+# File Operations
+# ----------------------------
+
+# Execute file by type
+cmd execute ${{
+    case "$f" in
+        *.sh) bash "$f" ;;
+        *.py) python3 "$f" ;;
+        *.js) node "$f" ;;
+        *.pl) perl "$f" ;;
+        *.php) php "$f" ;;
+        *.rb) ruby "$f" ;;
+        *)
+            if [ -x "$f" ]; then
+                "$f"
+            else
+                lf -remote "send $id echo Cannot execute $f"
+            fi
+            ;;
+    esac
+}}
+
+# ----------------------------
+# File Opening
+# ----------------------------
+
+# Smart file opener based on file type
+cmd open ${{
+    # Handle directories - navigate into them
+    if [ -d "$f" ]; then
+        lf -remote "send $id cd \"$f\""
+        return
+    fi
+    
+    case $(file --mime-type -b "$f") in
+        # Text based files
+        text/*|application/json|application/javascript|application/xml|application/x-php)
+            $EDITOR "$f";;
+            
+        # Media files
+        image/*)
+            nohup sxiv "$f" >/dev/null 2>&1 &;;
+        video/*)
+            nohup mpv "$f" >/dev/null 2>&1 &;;
+        audio/*)
+            nohup mpv "$f" >/dev/null 2>&1 &;;
+            
+        # Documents
+        application/pdf)
+            nohup zathura "$f" >/dev/null 2>&1 &;;
+        application/vnd.openxmlformats-officedocument.*|application/vnd.oasis.opendocument.*)
+            nohup libreoffice "$f" >/dev/null 2>&1 &;;
+            
+        # Archives
+        application/zip|application/x-rar|application/x-tar|application/x-gzip|application/x-bzip2)
+            # Open archive internally if possible
+            lf -remote "send $id extract";;
+            
+        # Default case
+        *)
+            case "$f" in
+                *.js|*.ts|*.vue|*.svelte|*.py|*.sh|*.c|*.cpp|*.rs|*.html|*.css|*.scss|*.jsx|*.tsx|*.go|*.rb|*.php|*.pl|*.lua|*.md|*.json|*.yaml|*.yml|*.toml|*.conf)
+                    $EDITOR "$f";;
+                *)
+                    xdg-open "$f";;
+            esac
+    esac
+}}
+
+# Open with custom application
+cmd open-with ${{
+    opener=$(echo -e "nvim\ncode\nfirefox\nmpv\nlibreoffice\ngimp\nxdg-open" | fzf --header="Select an opener" || true)
+    
+    # Only proceed if an opener was selected
+    if [[ -n "$opener" ]]; then
+        case "$opener" in
+            nvim)
+                nvim "$f"  # Use nvim directly
+                ;;
+            code)
+                nohup code "$f" >/dev/null 2>&1 &  # Runs in background
+                ;;
+            firefox)
+                nohup firefox "$f" >/dev/null 2>&1 &
+                ;;
+            mpv)
+                nohup mpv "$f" >/dev/null 2>&1 &
+                ;;
+            libreoffice)
+                nohup libreoffice "$f" >/dev/null 2>&1 &
+                ;;
+            gimp)
+                nohup gimp "$f" >/dev/null 2>&1 &
+                ;;
+            *)
+                if [[ -x "$(command -v $opener)" ]]; then
+                    "$opener" "$f"
+                else
+                    lf -remote "send $id echo Opener '$opener' not found"
+                fi
+                ;;
+        esac
+    fi
+}}
+
+# ----------------------------
+# Clipboard Operations
+# ----------------------------
+
+# Copy files to system clipboard
+cmd clipboard_copy_files ${{
+    if [ -n "$fs" ]; then
+        printf "%s\n" "$fs" | wl-copy
+    else
+        printf "%s\n" "$f" | wl-copy
+    fi
+    lf -remote "send $id echo Copied $(echo "$fs" | wc -l || echo 1) item(s) to clipboard"
+    lf -remote "send $id clear"
+}}
+
+# Copy filename to clipboard
+cmd clipboard_copy_name ${{
+    basename "$f" | tr -d '\n' | wl-copy
+    lf -remote "send $id echo Copied filename to clipboard: $(basename "$f")"
+    lf -remote "send $id clear"
+}}
+
+# Copy full path to clipboard
+cmd clipboard_copy_path ${{
+    realpath "$f" | tr -d '\n' | wl-copy
+    lf -remote "send $id echo Copied file path to clipboard"
+    lf -remote "send $id clear"
+}}
+
+# Copy directory path to clipboard
+cmd clipboard_copy_dir ${{
+    dirname "$(realpath "$f")" | tr -d '\n' | wl-copy
+    lf -remote "send $id echo Copied directory name to clipboard"
+    lf -remote "send $id clear"
+}}
+
+# ----------------------------
+# Trash Management
+# ----------------------------
+
+# Move to trash
+cmd trash ${{
+    trash_dir="$HOME/.trash"
+    paths_file="$trash_dir/.paths"
+    
+    # Create trash directory if it doesn't exist
+    mkdir -p "$trash_dir"
+    touch "$paths_file"
+    
+    # Move each selected file to trash with timestamp
+    for file in $fx; do
+        ts=$(date +%Y%m%d_%H%M%S)
+        filename=$(basename "$file")
+        trashed_file="$trash_dir/${filename}_$ts"
+        
+        # Move file to trash
+        mv "$file" "$trashed_file"
+        
+        # Store original path info
+        echo "$trashed_file:$file" >> "$paths_file"
+        
+        echo "Moved to trash: $filename"
+    done
+    
+    # Clear selection after trash operation
+    lf -remote "send $id clear"
+}}
+
+# Restore from trash
+cmd restore-trash ${{
+    trash_dir="$HOME/.trash"
+    paths_file="$trash_dir/.paths"
+    
+    if [ ! -f "$paths_file" ]; then
+        lf -remote "send $id echo No trash history found"
+        exit 1
+    fi
+    
+    # Use fzf to select files to restore
+    selected=$(cat "$paths_file" | sed 's/:.*//' | xargs -I{} basename {} | fzf -m --preview "cat $paths_file | grep {}" --header="Select files to restore (use TAB for multiple)" || true)
+    
+    if [ -n "$selected" ]; then
+        echo "$selected" | while read -r file; do
+            # Get the original path
+            trashed_file=$(find "$trash_dir" -name "$file")
+            orig_path=$(grep "$trashed_file" "$paths_file" | sed 's/.*://')
+            
+            if [ -n "$orig_path" ]; then
+                # Create parent directory if it doesn't exist
+                parent_dir=$(dirname "$orig_path")
+                mkdir -p "$parent_dir"
+                
+                # Restore file
+                mv "$trashed_file" "$orig_path" && echo "Restored: $orig_path"
+                
+                # Remove entry from paths file
+                sed -i "\#$trashed_file:#d" "$paths_file"
+            else
+                echo "Failed to find original path for $file"
+            fi
+        done
+    fi
+}}
+
+# Empty trash
+cmd empty-trash ${{
+    trash_dir="$HOME/.trash"
+    
+    # Confirm before emptying trash
+    read -p "Empty trash? This will permanently delete all files. (y/N) " confirm
+    if [ "$confirm" = "y" ]; then
+        rm -rf "$trash_dir"/*
+        mkdir -p "$trash_dir"
+        touch "$trash_dir/.paths"
+        echo > "$trash_dir/.paths"
+        lf -remote "send $id echo Trash emptied"
+    fi
+}}
+
+# ----------------------------
+# Bookmark System
+# ----------------------------
+
+# Bookmark management
+cmd bookmark ${{
+    bookmark_file="$HOME/.config/lf/bookmarks"
+    mkdir -p "$(dirname "$bookmark_file")"
+    touch "$bookmark_file"
+    
+    # First level menu - select operation
+    operation=$(echo -e "view\nadd\ndelete\nclear" | fzf --header="Bookmark Operations" --preview="
+    case {} in
+        view)   echo 'View and navigate to bookmarks';;
+        add)    echo 'Add current directory as a bookmark';;
+        delete) echo 'Delete a bookmark';;
+        clear)  echo 'Clear all bookmarks';;
+    esac" || true)
+    
+    [ -z "$operation" ] && exit
+    
+    case "$operation" in
+        view)
+            # No bookmarks check
+            if [ ! -s "$bookmark_file" ]; then
+                lf -remote "send $id echo No bookmarks found"
+                exit
+            fi
+            
+            # Select and navigate to bookmark
+            selected=$(cat "$bookmark_file" | sed 's/|/ → /' | 
+                       fzf --header="Select Bookmark to Navigate" --preview="echo 'Path: {2}'" || true)
+            
+            if [ -n "$selected" ]; then
+                bookmark_name=$(echo "$selected" | cut -d' ' -f1)
+                path=$(grep "^$bookmark_name|" "$bookmark_file" | cut -d'|' -f2)
+                
+                if [ -d "$path" ]; then
+                    lf -remote "send $id cd \"$path\""
+                    lf -remote "send $id echo Navigated to: $path"
+                else
+                    lf -remote "send $id echo Error: Path no longer exists: $path"
+                fi
+            fi
+            ;;
+            
+        add)
+            # Prompt for bookmark name
+            read -p "Enter bookmark name: " name
+            
+            # Validate input
+            if [ -z "$name" ]; then
+                lf -remote "send $id echo Bookmark name cannot be empty"
+                exit
+            fi
+            
+            # Check if bookmark already exists
+            if grep -q "^$name|" "$bookmark_file"; then
+                read -p "Bookmark '$name' already exists. Overwrite? (y/N): " confirm
+                if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+                    lf -remote "send $id echo Bookmark addition cancelled"
+                    exit
+                fi
+                # Remove existing bookmark with same name
+                sed -i "/^$name|/d" "$bookmark_file"
+            fi
+            
+            # Add new bookmark
+            pwd=$(pwd)
+            echo "$name|$pwd" >> "$bookmark_file"
+            lf -remote "send $id echo Added bookmark: $name → $pwd"
+            ;;
+            
+        delete)
+            # No bookmarks check
+            if [ ! -s "$bookmark_file" ]; then
+                lf -remote "send $id echo No bookmarks found"
+                exit
+            fi
+            
+            # Select bookmark to delete
+            selected=$(cat "$bookmark_file" | sed 's/|/ → /' | 
+                       fzf --header="Select Bookmark to Delete" --preview="echo 'Path: {2}'" || true)
+            
+            if [ -n "$selected" ]; then
+                bookmark_name=$(echo "$selected" | cut -d' ' -f1)
+                path=$(grep "^$bookmark_name|" "$bookmark_file" | cut -d'|' -f2)
+                
+                read -p "Delete bookmark '$bookmark_name'? (y/N): " confirm
+                if [[ "$confirm" =~ ^[Yy]$ ]]; then
+                    sed -i "/^$bookmark_name|/d" "$bookmark_file"
+                    lf -remote "send $id echo Deleted bookmark: $bookmark_name"
+                else
+                    lf -remote "send $id echo Bookmark deletion cancelled"
+                fi
+            fi
+            ;;
+            
+        clear)
+            # No bookmarks check
+            if [ ! -s "$bookmark_file" ]; then
+                lf -remote "send $id echo No bookmarks found"
+                exit
+            fi
+            
+            # Confirm before clearing all bookmarks
+            read -p "Delete ALL bookmarks? This cannot be undone. (y/N): " confirm
+            if [[ "$confirm" =~ ^[Yy]$ ]]; then
+                > "$bookmark_file"
+                lf -remote "send $id echo All bookmarks cleared"
+            else
+                lf -remote "send $id echo Bookmark clearing cancelled"
+            fi
+            ;;
+    esac
+}}
+
+# ----------------------------
+# Archive Operations
+# ----------------------------
+
+# Create archive
+cmd archive ${{
+    clear
+    echo "Create archive:"
+    echo "1) zip"
+    echo "2) tar"
+    echo "3) tar.gz"
+    echo "4) tar.bz2"
+    read -p "Select format (1-4): " format
+    
+    read -p "Enter archive name: " archive_name
+    
+    case "$format" in
+        1) zip -r "$archive_name.zip" $fx ;;
+        2) tar -cvf "$archive_name.tar" $fx ;;
+        3) tar -czvf "$archive_name.tar.gz" $fx ;;
+        4) tar -cjvf "$archive_name.tar.bz2" $fx ;;
+        *) echo "Invalid option" ;;
+    esac
+    
+    # Clear selection after archiving
+    lf -remote "send $id clear"
+}}
+
+# Extract archive
+cmd extract ${{
+    clear
+    # Extract files into a directory named after the archive
+    archive_name=$(basename "$f")
+    archive_dir="${archive_name%.*}"
+    
+    # Create extraction directory
+    mkdir -p "$archive_dir"
+    cd "$archive_dir"
+    
+    # Extract based on file extension
+    case "$f" in
+        *.zip) unzip ../"$archive_name" ;;
+        *.tar.gz) tar -xzvf ../"$archive_name" ;;
+        *.tar.bz2) tar -xjvf ../"$archive_name" ;;
+        *.tar) tar -xvf ../"$archive_name" ;;
+        *.rar) unrar x ../"$archive_name" ;;
+        *.7z) 7z x ../"$archive_name" ;;
+        *) 
+            echo "Unsupported format"
+            cd ..
+            rmdir "$archive_dir"
+            ;;
+    esac
+    
+    # Return to parent directory and notify extraction completion
+    cd ..
+    echo "Files extracted to: $archive_dir"
+    echo "Press enter to continue"
+    read
+}}
+
+# ----------------------------
+# File Information
+# ----------------------------
+map i file_info           # Show file info
+
+# ----------------------------
+# Toggles and Settings
+# ----------------------------
+map zh toggle_hidden      # Toggle hidden files
+map zp toggle_preview     # Toggle preview
+map zs sort_menu          # Sort menu
+map . set hidden!         # Toggle hidden files (alt)
+
+# ----------------------------
+# Sort Operations
+# ----------------------------
+map sn sort_by_name       # Sort by name
+map ss sort_by_size       # Sort by size
+map st sort_by_time       # Sort by time
+map se sort_by_ext        # Sort by extension
+map sr sort_reverse       # Reverse sort
+
+# ----------------------------
+# Help
+# ----------------------------
+map ? $lf -doc | less     # Show help documentation
+map i file_info           # Show file info
+
+# ----------------------------
+# Toggles and Settings
+# ----------------------------
+map zh toggle_hidden      # Toggle hidden files
+map zp toggle_preview     # Toggle preview
+map zs sort_menu          # Sort menu
+map . set hidden!         # Toggle hidden files (alt)
+
+# ----------------------------
+# Sort Operations
+# ----------------------------
+map sn sort_by_name       # Sort by name
+map ss sort_by_size       # Sort by size
+map st sort_by_time       # Sort by time
+map se sort_by_ext        # Sort by extension
+map sr sort_reverse       # Reverse sort
+
+# ----------------------------
+# Help
+# ----------------------------
+map ? $lf -doc | less     # Show help documentation
+# ----------------------------
+
+# Display detailed file information
+cmd file_info ${{
+    clear
+    echo "File Information for: $f"
+    echo "------------------------"
+    
+    # Basic info
+    stat "$f"
+    echo
+    
+    # File type
+    file -b "$f"
+    echo
+    
+    # Permissions
+    echo "Permissions: $(ls -la "$f" | awk '{print $1}')"
+    echo
+    
+    # Owner/Group
+    echo "Owner: $(stat -c '%U' "$f"), Group: $(stat -c '%G' "$f")"
+    echo
+    
+    # If it's a text file, show encoding and line count
+    if file -b --mime-type "$f" | grep -q "text/"; then
+        echo "Encoding: $(file -bi "$f" | sed 's/.*charset=//')"
+        echo "Line count: $(wc -l < "$f")"
+        echo "Word count: $(wc -w < "$f")"
+        echo
+    fi
+    
+    # If it's an image, show dimensions
+    if file -b --mime-type "$f" | grep -q "image/"; then
+        identify -format "Dimensions: %wx%h pixels\nResolution: %x x %y\nColor depth: %z-bit\n" "$f" 2>/dev/null
+        echo
+    fi
+    
+    # If it's a video, show duration and other info
+    if file -b --mime-type "$f" | grep -q "video/"; then
+        ffprobe -v error -select_streams v:0 -show_entries stream=width,height,duration,bit_rate -of default=noprint_wrappers=1 "$f" 2>/dev/null
+        echo
+    fi
+    
+    # MD5 hash
+    echo "MD5: $(md5sum "$f" | cut -d' ' -f1)"
+    
+    read -p "Press enter to continue"
+}}
+
+# ----------------------------
+# Selection Operations
+# ----------------------------
+
+# Invert the current selection
+cmd invert-selection ${{
+    # Create a temporary file to store all files
+    tmp_file=$(mktemp)
+    ls -A > "$tmp_file"
+    
+    # Create another temporary file for selected files
+    sel_file=$(mktemp)
+    [ -n "$fs" ] && printf "%s\n" "$fs" > "$sel_file"
+    
+    # Remove selected files from all files to get unselected files
+    unsel_file=$(mktemp)
+    grep -vxF -f "$sel_file" "$tmp_file" > "$unsel_file" || true
+    
+    # Clear current selection
+    lf -remote "send $id unselect"
+    
+    # Select the files that were previously unselected
+    if [ -s "$unsel_file" ]; then
+        cat "$unsel_file" | while read -r file; do
+            lf -remote "send $id toggle \"$file\""
+        done
+    fi
+    
+    # Clean up
+    rm "$tmp_file" "$sel_file" "$unsel_file"
+    
+    lf -remote "send $id echo Selection inverted"
+}}
+
+# ----------------------------
+# Toggles and Sorting
+# ----------------------------
+
+# Toggle hidden files
+cmd toggle_hidden ${{
+    lf -remote "send $id set hidden!"
+    lf -remote "send $id echo Hidden files toggled"
+}}
+
+# Toggle preview
+cmd toggle_preview ${{
+    lf -remote "send $id set preview!"
+    lf -remote "send $id echo Preview toggled"
+}}
+
+# Sort by name
+cmd sort_by_name ${{
+    lf -remote "send $id set sortby name"
+    lf -remote "send $id echo Sorted by name"
+}}
+
+# Sort by size
+cmd sort_by_size ${{
+    lf -remote "send $id set sortby size"
+    lf -remote "send $id echo Sorted by size"
+}}
+
+# Sort by modification time
+cmd sort_by_time ${{
+    lf -remote "send $id set sortby time"
+    lf -remote "send $id echo Sorted by modification time"
+}}
+
+# Sort by extension
+cmd sort_by_ext ${{
+    lf -remote "send $id set sortby ext"
+    lf -remote "send $id echo Sorted by extension"
+}}
+
+# Toggle reverse sort
+cmd sort_reverse ${{
+    lf -remote "send $id set reverse!"
+    lf -remote "send $id echo Reverse sort toggled"
+}}
+
+# Sort menu
+cmd sort_menu ${{
+    clear
+    echo "Sort Options:"
+    echo "1) Name (alphabetical)"
+    echo "2) Size (largest first)"
+    echo "3) Time (newest first)"
+    echo "4) Extension"
+    echo "5) Natural (default)"
+    echo "r) Toggle Reverse Sort"
+    echo "q) Cancel"
+    
+    read -p "Select sort method: " sort_option
+    
+    case "$sort_option" in
+        1) lf -remote "send $id set sortby name" ;;
+        2) lf -remote "send $id set sortby size" ;;
+        3) lf -remote "send $id set sortby time" ;;
+        4) lf -remote "send $id set sortby ext" ;;
+        5) lf -remote "send $id set sortby natural" ;;
+        r) lf -remote "send $id set reverse!" ;;
+        q) echo "Sort canceled" ;;
+        *) echo "Invalid option" ;;
+    esac
+}}
+
+# ==============================
+# KEYBINDINGS
+# ==============================
+
+# Clear default keybindings (except basic ones)
+map <esc> unselect  # Keep this one binding
+
+# ----------------------------
+# Navigation (Vim-style)
+# ----------------------------
+map j down
+map k up
+map h updir
+map l open
+map gg top
+map G bottom
+map J :toggle; down
+map K :toggle; up
+map <c-d> half-down
+map <c-u> half-up
+map ] page-down
+map [ page-up
+
+# ----------------------------
+# Directory Navigation
+# ----------------------------
+map gh cd ~               # Home
+map gd cd ~/Downloads     # Downloads
+map gp cd ~/Projects      # Projects
+map gc cd ~/.config       # Config
+map gD cd ~/Documents     # Documents
+map gP cd ~/Pictures      # Pictures
+map gV cd ~/Videos        # Videos
+map gm cd ~/Music         # Music
+map g/ cd /               # Root
+
+# ----------------------------
+# File Operations
+# ----------------------------
+map <enter> open
+map o open
+map O open-with
+map e $EDITOR "$f"       # Edit with default editor
+map <c-e> execute         # Execute file
+
+# ----------------------------
+# File Creation/Manipulation
+# ----------------------------
+map a push :mkdir<space>           # Create directory
+map A push :touch<space>           # Create file
+map M push :mkcd<space>            # Make and enter directory
+map T touchmulti                   # Create multiple files
+map b bulk-rename                  # Bulk rename
+
+# ----------------------------
+# Delete
+# ----------------------------
+map x delete              # Delete (with confirmation)
+
+# ----------------------------
+# Trash Management
+# ----------------------------
+map <delete> trash        # Move to trash
+map <c-r> restore-trash   # Restore from trash
+map E empty-trash         # Empty trash
+
+# ----------------------------
+# Selection
+# ----------------------------
+map <space> toggle        # Toggle selection
+map v invert-selection    # Invert selection
+map V :unselect           # Clear all selections
+map u unselect            # Unselect current file
+
+# ----------------------------
+# Clipboard Operations
+# ----------------------------
+map C push :clipboard_copy_files<enter>   # Copy files to system clipboard
+map Y push :clipboard_copy_name<enter>    # Copy filename to clipboard
+map P push :clipboard_copy_path<enter>    # Copy full path to clipboard
+map D push :clipboard_copy_dir<enter>     # Copy directory path to clipboard
+
+# ----------------------------
+# Search and Navigation bindings
+# ----------------------------
+map <c-f> fzf_search      # Search in file contents
+map <c-g> :fzf-find       # Fuzzy find in current directory
+map <c-d> fzf_dir         # Jump to directory with fuzzy search
+map <c-j> fzf_jump        # Jump to file with fuzzy search
+map zo z                  # Zoxide jump with frecency
+
+# ----------------------------
+# Bookmark Operations
+# ----------------------------
+map <c-b> bookmark
+
+# ----------------------------
+# Archive Operations
+# ----------------------------
+map Z archive             # Create archive
+map X extract             # Extract archive
+
+# ----------------------------
+# File Information

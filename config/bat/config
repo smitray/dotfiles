@@ -1,0 +1,87 @@
+# Catppuccin Mocha theme
+--theme="Catppuccin Mocha"
+
+# Complete styling with grid for better readability
+--style="numbers,changes,header,grid"
+
+# Enable italic text (works in most modern terminals)
+--italic-text=always
+
+# Smart pager configuration
+--pager="less -FRX"
+
+# Better wrapping for long lines
+--wrap=auto
+
+# Show file size in the header
+--file-name=always
+
+# File mapping for special file types
+# Shell and configuration files
+--map-syntax "zshrc:Bourne Again Shell (bash)"
+--map-syntax "zshenv:Bourne Again Shell (bash)"
+--map-syntax ".aliases:Bourne Again Shell (bash)"
+--map-syntax ".functions:Bourne Again Shell (bash)"
+--map-syntax ".profile:Bourne Again Shell (bash)"
+--map-syntax ".bashrc:Bourne Again Shell (bash)"
+--map-syntax ".bash_profile:Bourne Again Shell (bash)"
+--map-syntax ".zprofile:Bourne Again Shell (bash)"
+--map-syntax "*.zsh:Bourne Again Shell (bash)"
+--map-syntax "tmux.conf:Bourne Again Shell (bash)"
+
+# Git related files
+--map-syntax ".gitconfig:Git Config"
+--map-syntax ".gitignore:Git Ignore"
+--map-syntax ".gitattributes:Git Attributes"
+--map-syntax "COMMIT_EDITMSG:Git Commit"
+--map-syntax "MERGE_MSG:Git Commit"
+
+# Config files
+--map-syntax "*.ini:INI"
+--map-syntax "*.conf:INI"
+--map-syntax "*.cfg:INI"
+--map-syntax "*.properties:Java Properties"
+--map-syntax "*.props:Java Properties"
+--map-syntax "*.toml:TOML"
+--map-syntax "*.service:INI"
+--map-syntax "*.desktop:INI"
+
+# Data formats
+--map-syntax "*.json:JSON"
+--map-syntax "*.yaml:YAML"
+--map-syntax "*.yml:YAML"
+--map-syntax "*.xml:XML"
+--map-syntax "*.csv:CSV"
+--map-syntax "*.plist:XML"
+
+# Web development
+--map-syntax "*.html.erb:HTML (Ruby)"
+--map-syntax "*.jsx:JavaScript (JSX)"
+--map-syntax "*.tsx:TypeScript (TSX)"
+--map-syntax "*.cshtml:HTML"
+--map-syntax "*.vue:Vue"
+--map-syntax "*.svelte:HTML"
+--map-syntax "*.astro:HTML"
+
+# Markdown and documentation
+--map-syntax "*.md:Markdown"
+--map-syntax "*.markdown:Markdown"
+--map-syntax "*.rst:reStructuredText"
+--map-syntax "*.adoc:AsciiDoc"
+--map-syntax "*.txt:Plain Text"
+
+# Docker and container files
+--map-syntax "Dockerfile:Dockerfile"
+--map-syntax "docker-compose.yml:YAML"
+--map-syntax "docker-compose.yaml:YAML"
+--map-syntax "Containerfile:Dockerfile"
+
+# Build configs
+--map-syntax "Makefile:Makefile"
+--map-syntax "CMakeLists.txt:CMake"
+--map-syntax "*.cmake:CMake"
+--map-syntax "*.ninja:Ninja"
+
+# Database
+--map-syntax "*.prisma:Prisma"
+--map-syntax "*.sql:SQL"
